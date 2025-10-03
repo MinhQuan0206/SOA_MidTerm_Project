@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.drawerlayout.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/drawer_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- Nội dung chính -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Toolbar trên đầu (dải cùng màu với sidebar, ví dụ: #0D47A1) -->
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="#0D47A1"
+            app:titleTextColor="#FFFFFF">
+
+            <TextView
+                android:id="@+id/tv_account_balance"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:text="Số dư: 0 VNĐ"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
+                android:paddingEnd="16dp" />
+        </com.google.android.material.appbar.MaterialToolbar>
+
+        <!-- Thông tin sinh viên: Editable cho ID, nút Tìm nằm ngang -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="10dp"
+            app:cardElevation="4dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Thông tin Sinh viên"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="#0D47A1"
+                android:layout_marginBottom="12dp" />
+
+            <!-- Hàng ngang cho MSSV và nút Tìm -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/til_student_id"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="Mã số sinh viên"
+                    android:enabled="true">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/et_student_id"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <Button
+                    android:id="@+id/btn_search"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:backgroundTint="#0D47A1"
+                    android:text="TÌM"
+                    android:textColor="#FFFFFF"
+                    android:textSize="14sp"
+                    android:padding="8dp" />
+            </LinearLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/til_student_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:hint="Tên sinh viên"
+                android:enabled="false">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/et_student_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+        </com.google.android.material.textfield.TextInputLayout>
+    </LinearLayout>
+</androidx.cardview.widget.CardView>
+
+    <!-- Bảng: Mã môn, Tên môn, Số tín chỉ, Số tiền (sử dụng RecyclerView cho responsive) -->
+<androidx.recyclerview.widget.RecyclerView
+android:id="@+id/rv_courses"
+android:layout_width="match_parent"
+android:layout_height="wrap_content"
+android:layout_margin="16dp"
+app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+
+    <!-- Tổng học phí và nút thanh toán -->
+<LinearLayout
+android:layout_width="match_parent"
+android:layout_height="wrap_content"
+android:orientation="horizontal"
+android:gravity="center"
+android:layout_margin="16dp">
+
+<TextView
+    android:id="@+id/tv_total_fee"
+    android:layout_width="0dp"
+    android:layout_weight="1"
+    android:layout_height="wrap_content"
+    android:text="Tổng học phí: 0 VNĐ"
+    android:textSize="16sp"
+    android:textStyle="bold" />
+
+<Button
+    android:id="@+id/btn_pay"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:text="THANH TOÁN"
+    android:backgroundTint="#0D47A1"
+    android:textColor="#FFFFFF" />
+</LinearLayout>
+    </LinearLayout>
+
+    <!-- Sidebar bên trái -->
+<com.google.android.material.navigation.NavigationView
+android:id="@+id/nav_view"
+android:layout_width="wrap_content"
+android:layout_height="match_parent"
+android:layout_gravity="start"
+android:background="#0D47A1"
+app:headerLayout="@layout/nav_header"
+app:menu="@menu/nav_menu" />
+
+    </androidx.drawerlayout.widget.DrawerLayout>

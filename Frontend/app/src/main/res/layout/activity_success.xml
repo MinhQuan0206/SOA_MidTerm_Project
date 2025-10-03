@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:background="#F5F7FA">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:gravity="center_horizontal|center_vertical">
+
+
+        <ImageView
+            android:id="@+id/iv_success_icon"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:src="@drawable/ic_success"/>  <!-- Thêm drawable tick xanh lá ở đây -->
+        <TextView
+            android:id="@+id/tv_success_message"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Thành công!"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:textColor="#0D47A1"
+            android:layout_marginBottom="24dp" />
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="10dp"
+            app:cardElevation="4dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:gravity="center">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Giao dịch của bạn đã hoàn tất thành công."
+                    android:textSize="16sp"
+                    android:textColor="#757575"
+                    android:layout_marginBottom="16dp" />
+
+                <Button
+                    android:id="@+id/btn_back_home"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="48dp"
+                    android:text="QUAY VỀ MÀN HÌNH CHÍNH"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    android:backgroundTint="#0D47A1"
+                    android:textColor="#FFFFFF" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>
