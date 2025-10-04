@@ -1,5 +1,13 @@
 <resources>
-    <string name="app_name">My Applicationdghjku</string>
+
     <string name="open">Open navigation drawer</string>
     <string name="close">Close navigation drawer</string>
+    <string name="app_name">iBanking</string>
+    <string name="login_title">iBanking</string>
+    <string name="username_hint">Tên đăng nhập</string>
+    <string name="password_hint">Mật khẩu</string>
+    <string name="btn_login">ĐĂNG NHẬP</string>
+    <string name="forgot_password">Quên mật khẩu?</string>
+    <string name="register_question">Chưa có tài khoản? </string>
+    <string name="register_now">Đăng ký ngay</string>
 </resources>
