@@ -7,14 +7,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/luxury_navy_background"
-    >
-
-    <!-- Logo -->
-
-    <!-- Title -->
-
-
-    <!-- CardView chứa form -->
+    tools:context=".MainActivity">
 
     <ImageView
         android:id="@+id/iv_logo"
@@ -26,10 +19,8 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-
         android:clipToOutline="true"
         tools:targetApi="l"
-
         app:layout_constraintVertical_chainStyle="packed" />
 
     <androidx.cardview.widget.CardView
@@ -43,6 +34,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -62,6 +54,7 @@
                     android:layout_height="wrap_content"
                     android:inputType="text"
                     android:textSize="24sp"
+                    android:background="@drawable/rounded_image"
                     android:maxLines="1" />
             </com.google.android.material.textfield.TextInputLayout>
 
@@ -78,19 +71,22 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="textPassword"
+                    android:background="@drawable/rounded_image"
                     android:textSize="24sp"
                     android:maxLines="1" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <Button
+            <!-- ✅ AppCompatButton có gradient background -->
+            <androidx.appcompat.widget.AppCompatButton
                 android:id="@+id/btn_login"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:minHeight="96dp"
+                android:background="@drawable/button_gradient"
+                android:backgroundTint="@null"
                 android:text="@string/btn_login"
                 android:textSize="32sp"
                 android:textStyle="bold"
-                android:backgroundTint="#001F40"
                 android:textColor="#FFFFFF"
                 android:layout_marginBottom="24dp" />
 
