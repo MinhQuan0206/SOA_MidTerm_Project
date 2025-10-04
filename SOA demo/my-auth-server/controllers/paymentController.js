@@ -1,3 +1,4 @@
+const mongoose = require('mongoose'); // Đảm bảo đã có, thêm nếu chưa
 const crypto = require('crypto'); // Để tạo OTP ngẫu nhiên
 const nodemailer = require('nodemailer');
 const Account = require('../models/Account');
@@ -27,7 +28,7 @@ exports.requestPayTuition = async (req, res) => {
     const targetStudentId = isSelf ? (await Student.findOne({ username }))?.studentId : studentId;
     if (!targetStudentId) return res.json({ success: false, message: 'Không tìm thấy sinh viên' });
 
-    // Tìm student và lấy tuitionFee
+    // Tìm student và lấy tuitionFee (không cần transaction vì chỉ đọc)
     const student = await Student.findOne({ studentId: targetStudentId });
     if (!student) return res.json({ success: false, message: 'Không tìm thấy sinh viên' });
     if (student.tuitionFee === 0) return res.json({ success: false, message: 'Sinh viên này đã thanh toán học phí rồi' });
@@ -39,10 +40,10 @@ exports.requestPayTuition = async (req, res) => {
     const otpDoc = new Otp({ username, otp });
     await otpDoc.save();
 
-    // Gửi OTP đến email (giả định email từ username hoặc thêm trường email)
+    // Gửi OTP đến email
     const mailOptions = {
       from: process.env.EMAIL_FROM,
-      to: 'kiettran112520@gmail.com', // Giả định email là username@gmail.com, bạn có thể thay bằng email thật
+      to: 'kiettran112520@gmail.com', // Thay bằng email thật hoặc lấy từ User model
       subject: 'Mã OTP Thanh Toán Học Phí',
       text: `Mã OTP của bạn là ${otp}. Mã này có hiệu lực trong 5 phút.`
     };
@@ -60,44 +61,52 @@ exports.verifyOtpAndPay = async (req, res) => {
   if (!username || !otp || (isSelf === false && !studentId)) 
     return res.json({ success: false, message: 'Thiếu thông tin' });
 
+  const session = await mongoose.startSession(); // Bắt đầu transaction session
+  session.startTransaction(); // Bắt đầu transaction
+
   try {
-    // Kiểm tra OTP
-    const otpDoc = await Otp.findOne({ username, otp });
-    if (!otpDoc) return res.json({ success: false, message: 'OTP sai hoặc hết hạn' });
+    // Kiểm tra OTP trong transaction
+    const otpDoc = await Otp.findOne({ username, otp }).session(session);
+    if (!otpDoc) throw new Error('OTP sai hoặc hết hạn');
 
     // Xác định targetStudentId
-    const targetStudentId = isSelf ? (await Student.findOne({ username }))?.studentId : studentId;
-    if (!targetStudentId) return res.json({ success: false, message: 'Không tìm thấy sinh viên' });
+    const targetStudentId = isSelf ? (await Student.findOne({ username }).session(session))?.studentId : studentId;
+    if (!targetStudentId) throw new Error('Không tìm thấy sinh viên');
 
     // Tìm student và lấy tuitionFee
-    const student = await Student.findOne({ studentId: targetStudentId });
-    if (!student) return res.json({ success: false, message: 'Không tìm thấy sinh viên' });
-    if (student.tuitionFee === 0) return res.json({ success: false, message: 'Sinh viên này đã thanh toán học phí rồi' });
+    const student = await Student.findOne({ studentId: targetStudentId }).session(session);
+    if (!student) throw new Error('Không tìm thấy sinh viên');
+    if (student.tuitionFee === 0) throw new Error('Sinh viên này đã thanh toán học phí rồi');
 
     // Lấy amount = tuitionFee
     const amount = student.tuitionFee;
 
     // Tìm account
-    const account = await Account.findOne({ username });
-    if (!account) return res.json({ success: false, message: 'Không tìm thấy tài khoản' });
-    if (account.balance < amount) return res.json({ success: false, message: 'Số dư không đủ' });
+    const account = await Account.findOne({ username }).session(session);
+    if (!account) throw new Error('Không tìm thấy tài khoản');
+    if (account.balance < amount) throw new Error('Số dư không đủ');
 
-    // Thanh toán
+    // Thanh toán trong transaction
     account.balance -= amount;
-    await account.save();
+    await account.save({ session });
 
     student.tuitionFee = 0;
-    await student.save();
+    await student.save({ session });
 
     const transaction = new Transaction({ username, studentId: targetStudentId, amount, status: 'Thành công' });
-    await transaction.save();
+    await transaction.save({ session });
 
     // Xóa OTP sau khi thành công
-    await Otp.deleteOne({ _id: otpDoc._id });
+    await Otp.deleteOne({ _id: otpDoc._id }).session(session);
+
+    await session.commitTransaction(); // Hoàn tất transaction nếu thành công
+    session.endSession(); // Kết thúc session
 
     return res.json({ success: true, message: 'Thanh toán thành công' });
   } catch (err) {
+    await session.abortTransaction(); // Hủy transaction nếu lỗi
+    session.endSession(); // Kết thúc session
     console.error(err);
-    return res.status(500).json({ success: false, message: 'Lỗi server' });
+    return res.json({ success: false, message: err.message });
   }
 };
