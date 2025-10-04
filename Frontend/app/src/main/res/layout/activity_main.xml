@@ -3,7 +3,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/drawer_layout"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="#F3F3F3">
 
     <!-- Nội dung chính -->
     <LinearLayout
@@ -15,8 +16,10 @@
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:background="#0D47A1"
+            android:layout_height="104dp"
+
+            android:background="@drawable/button_gradient1"
+
             app:titleTextColor="#FFFFFF">
 
             <TextView
@@ -24,10 +27,10 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="end"
+                android:paddingEnd="16dp"
                 android:text="Số dư: 0 VNĐ"
                 android:textColor="#FFFFFF"
-                android:textSize="16sp"
-                android:paddingEnd="16dp" />
+                android:textSize="16sp" />
         </com.google.android.material.appbar.MaterialToolbar>
 
         <!-- Nội dung giữa: Thông tin sinh viên -->
@@ -35,30 +38,45 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="16dp"
-            app:cardCornerRadius="10dp"
-            app:cardElevation="4dp">
+            app:cardCornerRadius="12dp"
+            app:cardElevation="6dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="20dp">
 
-                <TextView
-                    android:layout_width="wrap_content"
+                <!-- Tiêu đề với icon -->
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Thông tin Sinh viên"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
-                    android:textColor="#0D47A1"
-                    android:layout_marginBottom="12dp" />
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="12dp">
 
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Thông tin Sinh viên"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="#0D47A1" />
+                </LinearLayout>
+
+                <!-- Mã số sinh viên -->
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/til_student_id"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="Mã số sinh viên"
-                    android:enabled="false">
+                    android:enabled="false"
+                    app:boxCornerRadiusTopStart="12dp"
+                    app:boxCornerRadiusTopEnd="12dp"
+                    app:boxCornerRadiusBottomStart="12dp"
+                    app:boxCornerRadiusBottomEnd="12dp"
+                    app:boxBackgroundColor="#F1F7FD">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/et_student_id"
@@ -66,22 +84,39 @@
                         android:layout_height="wrap_content" />
                 </com.google.android.material.textfield.TextInputLayout>
 
+                <!-- Khoảng cách -->
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="12dp" />
+
+                <!-- Tên sinh viên -->
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/til_student_name"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="Tên sinh viên"
-                    android:enabled="false">
+                    android:enabled="false"
+                    app:boxCornerRadiusTopStart="12dp"
+                    app:boxCornerRadiusTopEnd="12dp"
+                    app:boxCornerRadiusBottomStart="12dp"
+                    app:boxCornerRadiusBottomEnd="12dp"
+                    app:boxBackgroundColor="#F1F7FD">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/et_student_name"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content" />
                 </com.google.android.material.textfield.TextInputLayout>
+
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
+
         <!-- Bảng: Mã môn, Tên môn, Số tín chỉ, Số tiền (sử dụng RecyclerView cho responsive) -->
+
+        <!-- Tổng học phí và nút thanh toán -->
+
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rv_courses"
             android:layout_width="match_parent"
@@ -89,7 +124,6 @@
             android:layout_margin="16dp"
             app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
 
-        <!-- Tổng học phí và nút thanh toán -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
