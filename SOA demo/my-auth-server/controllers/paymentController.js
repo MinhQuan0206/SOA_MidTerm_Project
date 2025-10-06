@@ -110,3 +110,18 @@ exports.verifyOtpAndPay = async (req, res) => {
     return res.json({ success: false, message: err.message });
   }
 };
+exports.getBalance = async (req, res) => {
+  const { username } = req.query;
+  if (!username) 
+    return res.json({ success: false, message: 'Thiếu username' });
+
+  try {
+    const account = await Account.findOne({ username });
+    if (!account) return res.json({ success: false, message: 'Không tìm thấy tài khoản' });
+
+    return res.json({ success: true, message: 'Lấy số dư thành công', balance: account.balance });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, message: 'Lỗi server' });
+  }
+};
