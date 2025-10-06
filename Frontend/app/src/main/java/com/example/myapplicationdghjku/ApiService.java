@@ -22,7 +22,7 @@ public interface ApiService {
     Call<List<Course>> getCourses(@Query("student_id") String studentId);
 
     // Lấy số dư tài khoản
-    @GET("account/balance")
+    @GET("payment/getBalance")
     Call<BalanceResponse> getBalance(@Query("username") String username);
 
     // Tìm sinh viên khác
@@ -41,7 +41,7 @@ public interface ApiService {
 
 
     @POST("payment/verifyOtpAndPay")
-    Call<AuthResponse> verifyOtp(@Body VerifyOtpBody body);
+    Call<AuthResponse> verifyOtpAndPay(@Body VerifyOtpBody body);
 
 
 

@@ -16,7 +16,14 @@ const transporter = nodemailer.createTransport({
 });
 
 // Tạo OTP ngẫu nhiên
-const generateOtp = () => crypto.randomBytes(3).toString('hex').toUpperCase(); // OTP 6 ký tự
+const generateOtp = () => {
+  const digits = '0123456789';
+  let otp = '';
+  for (let i = 0; i < 6; i++) {
+    otp += digits[Math.floor(Math.random() * 10)];
+  }
+  return otp;
+};
 
 exports.requestPayTuition = async (req, res) => {
   const { username, studentId, isSelf } = req.body;
@@ -92,6 +99,7 @@ exports.verifyOtpAndPay = async (req, res) => {
     await account.save({ session });
 
     student.tuitionFee = 0;
+    student.courses = [];
     await student.save({ session });
 
     const transaction = new Transaction({ username, studentId: targetStudentId, amount, status: 'Thành công' });

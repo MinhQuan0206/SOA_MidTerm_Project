@@ -17,7 +17,9 @@ exports.getCourses = async (req, res) => {
   try {
     const student = await Student.findOne({ studentId });
     if (!student) return res.json({ success: false, message: 'Không tìm thấy sinh viên' });
-    return res.json(student.courses);
+    // Trả về courses rỗng nếu tuitionFee = 0
+    const courses = student.tuitionFee === 0 ? [] : student.courses;
+    return res.json(courses);
   } catch (err) {
     console.error(err);
     return res.status(500).json({ success: false, message: 'Lỗi server' });
