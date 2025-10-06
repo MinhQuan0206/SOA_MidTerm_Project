@@ -1,5 +1,5 @@
-const mongoose = require('mongoose'); // Đảm bảo đã có, thêm nếu chưa
-const crypto = require('crypto'); // Để tạo OTP ngẫu nhiên
+const mongoose = require('mongoose');
+const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const Account = require('../models/Account');
 const Student = require('../models/Student');
@@ -109,5 +109,20 @@ exports.verifyOtpAndPay = async (req, res) => {
     session.endSession(); // Kết thúc session
     console.error(err);
     return res.json({ success: false, message: err.message });
+  }
+};
+exports.getBalance = async (req, res) => {
+  const { username } = req.query;
+  if (!username) 
+    return res.json({ success: false, message: 'Thiếu username' });
+
+  try {
+    const account = await Account.findOne({ username });
+    if (!account) return res.json({ success: false, message: 'Không tìm thấy tài khoản' });
+
+    return res.json({ success: true, message: 'Lấy số dư thành công', balance: account.balance });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, message: 'Lỗi server' });
   }
 };
