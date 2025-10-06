@@ -12,11 +12,11 @@ public class Course {
     @SerializedName("fee")
     private double fee;
 
-    // Constructor không tham số (mặc định, giữ nguyên)
+    // Constructor mặc định
     public Course() {
     }
 
-    // Constructor với 4 tham số
+    // Constructor đầy đủ
     public Course(String courseId, String name, int credits, double fee) {
         this.courseId = courseId;
         this.name = name;
@@ -28,4 +28,9 @@ public class Course {
     public String getName() { return name; }
     public int getCredits() { return credits; }
     public double getFee() { return fee; }
+
+    // Trả về code = courseId
+    public String getCode() {
+        return courseId;
+    }
 }

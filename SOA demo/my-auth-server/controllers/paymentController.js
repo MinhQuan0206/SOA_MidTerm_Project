@@ -32,6 +32,7 @@ exports.requestPayTuition = async (req, res) => {
     const student = await Student.findOne({ studentId: targetStudentId });
     if (!student) return res.json({ success: false, message: 'Không tìm thấy sinh viên' });
     if (student.tuitionFee === 0) return res.json({ success: false, message: 'Sinh viên này đã thanh toán học phí rồi' });
+    console.log("Student:", student);
 
     // Tạo OTP
     const otp = generateOtp();

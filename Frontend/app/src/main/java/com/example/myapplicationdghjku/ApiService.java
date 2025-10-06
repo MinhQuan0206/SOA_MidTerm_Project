@@ -32,4 +32,19 @@ public interface ApiService {
     // Lấy lịch sử giao dịch
     @GET("transactions")
     Call<List<Transaction>> getTransactions(@Query("username") String username);
+
+    // Gửi yêu cầu thanh toán (tạo OTP)
+    // Gửi yêu cầu thanh toán (tạo OTP)
+
+    @POST("payment/requestPayTuition")
+    Call<AuthResponse> requestPayTuition(@Body RequestPayTuitionBody body);
+
+
+    @POST("payment/verifyOtpAndPay")
+    Call<AuthResponse> verifyOtp(@Body VerifyOtpBody body);
+
+
+
+
+
 }

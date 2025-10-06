@@ -4,15 +4,18 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.MenuItem;
+import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.TableLayout;
+import android.widget.TableRow;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -21,6 +24,7 @@ import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.navigation.NavigationView;
 import com.google.android.material.textfield.TextInputEditText;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,163 +32,340 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
+/**
+ * MainScreenActivity - hiển thị thông tin sinh viên, bảng môn học (TableLayout),
+ * thanh tìm kiếm theo mã sinh viên, và danh sách transactions bằng RecyclerView.
+ */
 public class MainScreenActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
-
     private static final String TAG = "MainScreenActivity";
     private DrawerLayout drawerLayout;
     private NavigationView navView;
     private MaterialToolbar toolbar;
+
     private TextView tvAccountBalance;
-    private TextInputEditText etStudentId, etStudentName;
-    private RecyclerView rvCourses;
+    private TextInputEditText etStudentId, etStudentName, etSearchStudent;
+    private TableLayout tlCourses, tlTransactions;
     private TextView tvTotalFee;
-    private Button btnPay;
+    private Button btnPay, btnSearch;
 
     private ApiService apiService;
     private String username;
     private double totalFee = 0.0;
-    private CourseAdapter adapter;
-    private List<Course> courses = new ArrayList<>();
+
+    private final List<Course> courses = new ArrayList<>();
+    private final DecimalFormat moneyFormat = new DecimalFormat("#,###");
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_main); // XML vẫn giữ TableLayout
 
-        // Khởi tạo các view với kiểm tra null
+        // Ánh xạ view
         drawerLayout = findViewById(R.id.drawer_layout);
         navView = findViewById(R.id.nav_view);
         toolbar = findViewById(R.id.toolbar);
+
         tvAccountBalance = findViewById(R.id.tv_account_balance);
         etStudentId = findViewById(R.id.et_student_id);
         etStudentName = findViewById(R.id.et_student_name);
-        rvCourses = findViewById(R.id.rv_courses);
+        etSearchStudent = findViewById(R.id.et_search_student);
+        tlCourses = findViewById(R.id.tl_courses);
+        tlTransactions = findViewById(R.id.tableTransactions);
         tvTotalFee = findViewById(R.id.tv_total_fee);
         btnPay = findViewById(R.id.btn_pay);
+        btnSearch = findViewById(R.id.btn_search);
 
-        if (toolbar == null || drawerLayout == null || navView == null) {
-            Toast.makeText(this, "Lỗi tải giao diện", Toast.LENGTH_SHORT).show();
-            finish();
-            return;
-        }
-
-        // Cài đặt Toolbar và Drawer
+        // Setup toolbar + drawer
         setSupportActionBar(toolbar);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
-                this, drawerLayout, toolbar, R.string.open, R.string.close);
+                this, drawerLayout, toolbar, R.string.open, R.string.close
+        );
         drawerLayout.addDrawerListener(toggle);
         toggle.syncState();
-
-        // Cài đặt NavigationView và lấy username một lần
         navView.setNavigationItemSelectedListener(this);
-        TextView tvNavUsername = navView.getHeaderView(0).findViewById(R.id.tv_nav_username);
-        if (tvNavUsername != null) {
-            SharedPreferences prefs = getSharedPreferences("app_prefs", MODE_PRIVATE);
-            username = prefs.getString("username", "Khách");
-            tvNavUsername.setText(username); // Hiển thị tên người dùng
-        } else {
-            Toast.makeText(this, "Lỗi tải header sidebar", Toast.LENGTH_SHORT).show();
-        }
 
-        // Khởi tạo API service (dù không dùng API ở đây)
+        // Lấy username từ SharedPreferences
+        SharedPreferences prefs = getSharedPreferences("app_prefs", MODE_PRIVATE);
+        username = prefs.getString("username", null);
+
+        // Khởi tạo Retrofit client
         apiService = RetrofitClient.getClient("http://10.0.2.2:3000/").create(ApiService.class);
 
-        // Khởi tạo RecyclerView
-        rvCourses.setLayoutManager(new LinearLayoutManager(this));
-        adapter = new CourseAdapter(courses);
-        rvCourses.setAdapter(adapter);
+        // Nút thanh toán
+        btnPay.setOnClickListener(v -> {
+            if (totalFee <= 0) {
+                Toast.makeText(this, "Không có học phí cần thanh toán", Toast.LENGTH_SHORT).show();
+                return;
+            }
 
-        // Thêm dữ liệu giả định
-        addMockData();
+            // Gửi OTP
+            RequestPayTuitionBody body = new RequestPayTuitionBody(username, etStudentId.getText().toString(), true);
+            apiService.requestPayTuition(body).enqueue(new Callback<AuthResponse>() {
+                @Override
+                public void onResponse(Call<AuthResponse> call, Response<AuthResponse> response) {
+                    if (response.isSuccessful() && response.body() != null) {
+                        AuthResponse resp = response.body();
+                        if (resp.isSuccess()) {
+                            Toast.makeText(MainScreenActivity.this, "OTP đã gửi vào email", Toast.LENGTH_SHORT).show();
+                            // Mở OtpActivity để nhập OTP
+                            Intent intent = new Intent(MainScreenActivity.this, OtpActivity.class);
+                            intent.putExtra("studentId", etStudentId.getText().toString());
+                            startActivity(intent);
+                        } else {
+                            Toast.makeText(MainScreenActivity.this, resp.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                }
 
-        // Load dữ liệu khác (không cần gọi loadCourses)
+                @Override
+                public void onFailure(Call<AuthResponse> call, Throwable t) {
+                    Toast.makeText(MainScreenActivity.this, "Lỗi gửi OTP", Toast.LENGTH_SHORT).show();
+                }
+            });
+        });
+
+
+        // Nút tìm kiếm sinh viên
+        btnSearch.setOnClickListener(v -> {
+            String studentId = etSearchStudent.getText().toString().trim();
+            if (!studentId.isEmpty()) {
+                loadStudentInfoById(studentId);
+            } else {
+                Toast.makeText(this, "Nhập mã sinh viên để tìm", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        // Load dữ liệu ban đầu
         loadBalance();
         loadStudentInfo();
+        loadTransactions(); // load lịch sử
+    }
 
-        // Xử lý sự kiện nút thanh toán
-        btnPay.setOnClickListener(v -> {
-            if (totalFee > 0) {
-                startActivity(new Intent(this, OtpActivity.class));
-            } else {
-                Toast.makeText(this, "Không có học phí cần thanh toán", Toast.LENGTH_SHORT).show();
+    // ----- TableLayout: thêm một hàng môn học -----
+    private void addCourseRow(String code, String name, int credits, double fee) {
+        TableRow row = new TableRow(this);
+
+        TableRow.LayoutParams lp = new TableRow.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+
+        TextView tvCode = new TextView(this);
+        tvCode.setText(code);
+        tvCode.setGravity(Gravity.CENTER);
+        tvCode.setPadding(dpToPx(8), dpToPx(8), dpToPx(8), dpToPx(8));
+        tvCode.setLayoutParams(lp);
+
+        TextView tvName = new TextView(this);
+        tvName.setText(name);
+        tvName.setPadding(dpToPx(8), dpToPx(8), dpToPx(8), dpToPx(8));
+        TableRow.LayoutParams lpName = new TableRow.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 2f);
+        tvName.setLayoutParams(lpName);
+
+        TextView tvCredits = new TextView(this);
+        tvCredits.setText(String.valueOf(credits));
+        tvCredits.setGravity(Gravity.CENTER);
+        tvCredits.setPadding(dpToPx(8), dpToPx(8), dpToPx(8), dpToPx(8));
+        tvCredits.setLayoutParams(lp);
+
+        TextView tvFee = new TextView(this);
+        tvFee.setText(moneyFormat.format(fee) + " VNĐ");
+        tvFee.setGravity(Gravity.CENTER);
+        tvFee.setPadding(dpToPx(8), dpToPx(8), dpToPx(8), dpToPx(8));
+        tvFee.setLayoutParams(lp);
+
+        row.addView(tvCode);
+        row.addView(tvName);
+        row.addView(tvCredits);
+        row.addView(tvFee);
+
+        // Thêm trước footer tổng
+        int lastIndex = tlCourses.getChildCount() - 1;
+        if (lastIndex >= 1) {
+            tlCourses.addView(row, lastIndex);
+        } else {
+            tlCourses.addView(row);
+        }
+    }
+
+    private int dpToPx(int dp) {
+        float density = getResources().getDisplayMetrics().density;
+        return Math.round(dp * density);
+    }
+
+    // ----- Load danh sách môn học -----
+    private void loadCourses(String studentId) {
+        if (studentId == null || studentId.isEmpty()) return;
+
+        apiService.getCourses(studentId).enqueue(new Callback<List<Course>>() {
+            @Override
+            public void onResponse(Call<List<Course>> call, Response<List<Course>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    courses.clear();
+                    courses.addAll(response.body());
+
+                    // Xóa các hàng cũ (giữ header + footer)
+                    int childCount = tlCourses.getChildCount();
+                    if (childCount > 2) {
+                        for (int i = childCount - 2; i >= 1; i--) {
+                            tlCourses.removeViewAt(i);
+                        }
+                    }
+
+                    totalFee = 0;
+                    for (Course c : courses) {
+                        addCourseRow(c.getCourseId(), c.getName(), c.getCredits(), c.getFee());
+                        totalFee += c.getFee();
+                    }
+                    tvTotalFee.setText(moneyFormat.format(totalFee) + " VNĐ");
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<Course>> call, Throwable t) {
+                Log.e(TAG, "Load courses error: " + t.getMessage(), t);
             }
         });
     }
 
-    private void addMockData() {
-        // Thêm dữ liệu giả định
-        courses.add(new Course("CS101", "Lập trình Java", 3, 1500000.00));
-        courses.add(new Course("CS102", "Cơ sở dữ liệu", 4, 2000000.00));
-        courses.add(new Course("CS103", "Mạng máy tính", 3, 1800000.00));
-
-        // Tính tổng học phí
-        totalFee = 0;
-        for (Course c : courses) {
-            totalFee += c.getFee();
-        }
-        if (tvTotalFee != null) {
-            tvTotalFee.setText("Tổng học phí: " + totalFee + " VNĐ");
-        }
-
-        // Cập nhật adapter
-        adapter.notifyDataSetChanged();
-        Log.d(TAG, "Mock data added, total courses: " + courses.size() + ", total fee: " + totalFee);
-    }
-
+    // ----- Load số dư -----
     private void loadBalance() {
-        if (username == null || username.isEmpty()) {
-            Toast.makeText(this, "Không có thông tin người dùng", Toast.LENGTH_SHORT).show();
-            return;
-        }
+        if (username == null || username.isEmpty()) return;
+
         apiService.getBalance(username).enqueue(new Callback<BalanceResponse>() {
             @Override
             public void onResponse(Call<BalanceResponse> call, Response<BalanceResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    tvAccountBalance.setText("Số dư: " + response.body().getBalance() + " VNĐ");
+                    double balance = response.body().getBalance();
+                    tvAccountBalance.setText("Số dư: " + formatMoney(balance) + " VNĐ");
                 } else {
-                    Log.e(TAG, "Load balance error: " + response.message());
-                    Toast.makeText(MainScreenActivity.this, "Lỗi load số dư: " + response.message(), Toast.LENGTH_SHORT).show();
+                    tvAccountBalance.setText("Số dư: 0 VNĐ");
                 }
             }
 
             @Override
             public void onFailure(Call<BalanceResponse> call, Throwable t) {
-                Log.e(TAG, "Load balance failure: " + t.getMessage());
-                Toast.makeText(MainScreenActivity.this, "Lỗi kết nối: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                tvAccountBalance.setText("Số dư: 0 VNĐ");
+                Toast.makeText(MainScreenActivity.this, "Không thể tải số dư", Toast.LENGTH_SHORT).show();
             }
         });
     }
+    private String formatMoney(double amount) {
+        return new java.text.DecimalFormat("#,###").format(amount);
+    }
 
+
+    // ----- Load thông tin sinh viên -----
     private void loadStudentInfo() {
-        if (username == null || username.isEmpty()) {
-            Toast.makeText(this, "Không có thông tin người dùng", Toast.LENGTH_SHORT).show();
-            return;
-        }
+        if (username == null || username.isEmpty()) return;
+
         apiService.getStudentInfo(username).enqueue(new Callback<Student>() {
             @Override
             public void onResponse(Call<Student> call, Response<Student> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     Student student = response.body();
-                    if (etStudentId != null) etStudentId.setText(student.getStudentId());
-                    if (etStudentName != null) etStudentName.setText(student.getName());
-                } else {
-                    Log.e(TAG, "Load student info error: " + response.message());
-                    Toast.makeText(MainScreenActivity.this, "Lỗi load info sinh viên: " + response.message(), Toast.LENGTH_SHORT).show();
+                    etStudentId.setText(student.getStudentId());
+                    etStudentName.setText(student.getName());
+                    loadCourses(student.getStudentId());
                 }
             }
 
             @Override
             public void onFailure(Call<Student> call, Throwable t) {
-                Log.e(TAG, "Load student info failure: " + t.getMessage());
-                Toast.makeText(MainScreenActivity.this, "Lỗi kết nối: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                Log.e(TAG, "Load student info error: " + t.getMessage(), t);
             }
         });
     }
 
-    private void loadCourses() {
-        // Tạm thời không gọi API, đã dùng dữ liệu giả định
+    // ----- Tìm sinh viên theo mã -----
+    private void loadStudentInfoById(String studentId) {
+        if (studentId == null || studentId.isEmpty()) return;
+
+        apiService.searchStudent(studentId).enqueue(new Callback<Student>() {
+            @Override
+            public void onResponse(Call<Student> call, Response<Student> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    Student student = response.body();
+                    etStudentId.setText(student.getStudentId());
+                    etStudentName.setText(student.getName());
+                    loadCourses(student.getStudentId());
+                } else {
+                    Toast.makeText(MainScreenActivity.this, "Không tìm thấy sinh viên", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Student> call, Throwable t) {
+                Toast.makeText(MainScreenActivity.this, "Lỗi khi tìm sinh viên", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
+    // ----- Load lịch sử giao dịch vào TableLayout -----
+    private void loadTransactions() {
+        if (username == null || username.isEmpty()) return;
+
+        apiService.getTransactions(username).enqueue(new Callback<List<Transaction>>() {
+            @Override
+            public void onResponse(Call<List<Transaction>> call, Response<List<Transaction>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    tlTransactions.removeViews(1, tlTransactions.getChildCount() - 1); // Xóa rows cũ, giữ header
+                    for (Transaction t : response.body()) {
+                        addTransactionRow(t);
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<Transaction>> call, Throwable t) {
+                Log.e(TAG, "Load transactions error: " + t.getMessage(), t);
+            }
+        });
+    }
+
+    // ----- Thêm row cho lịch sử giao dịch -----
+    private void addTransactionRow(Transaction t) {
+        TableRow row = new TableRow(this);
+
+        TableRow.LayoutParams lp1 = new TableRow.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+        TableRow.LayoutParams lp2 = new TableRow.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+        TableRow.LayoutParams lp3 = new TableRow.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+        TableRow.LayoutParams lp4 = new TableRow.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+        TableRow.LayoutParams lp5 = new TableRow.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+
+        TextView tvSender = new TextView(this);
+        tvSender.setText(t.getSender() != null ? t.getSender() : "-");
+        tvSender.setGravity(Gravity.CENTER);
+        tvSender.setLayoutParams(lp1);
+
+        TextView tvReceiver = new TextView(this);
+        tvReceiver.setText(t.getReceiverStudentId() != null ? t.getReceiverStudentId() : "-");
+        tvReceiver.setGravity(Gravity.CENTER);
+        tvReceiver.setLayoutParams(lp2);
+
+        TextView tvAmount = new TextView(this);
+        tvAmount.setText(moneyFormat.format(t.getAmount()) + " VNĐ");
+        tvAmount.setGravity(Gravity.CENTER);
+        tvAmount.setLayoutParams(lp3);
+
+        TextView tvDatetime = new TextView(this);
+        tvDatetime.setText(t.getDatetime() != null ? t.getDatetime() : "-");
+        tvDatetime.setGravity(Gravity.CENTER);
+        tvDatetime.setLayoutParams(lp4);
+
+        TextView tvStatus = new TextView(this);
+        tvStatus.setText(t.getStatus() != null ? t.getStatus() : "-");
+        tvStatus.setGravity(Gravity.CENTER);
+        tvStatus.setLayoutParams(lp5);
+
+        row.addView(tvSender);
+        row.addView(tvReceiver);
+        row.addView(tvAmount);
+        row.addView(tvDatetime);
+        row.addView(tvStatus);
+
+        tlTransactions.addView(row);
+    }
+
+
+    // ----- Navigation Drawer -----
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         int id = item.getItemId();
@@ -198,16 +379,7 @@ public class MainScreenActivity extends AppCompatActivity implements NavigationV
             startActivity(new Intent(this, MainActivity.class));
             finish();
         }
-        if (drawerLayout != null) drawerLayout.closeDrawer(GravityCompat.START);
+        if (drawerLayout != null) drawerLayout.closeDrawers();
         return true;
-    }
-
-    @Override
-    public void onBackPressed() {
-        if (drawerLayout != null && drawerLayout.isDrawerOpen(GravityCompat.START)) {
-            drawerLayout.closeDrawer(GravityCompat.START);
-        } else {
-            super.onBackPressed();
-        }
     }
 }
