@@ -1,5 +1,5 @@
-const mongoose = require('mongoose'); // Đảm bảo đã có, thêm nếu chưa
-const crypto = require('crypto'); // Để tạo OTP ngẫu nhiên
+const mongoose = require('mongoose');
+const crypto = require('crypto');
 const nodemailer = require('nodemailer');
 const Account = require('../models/Account');
 const Student = require('../models/Student');
