@@ -69,6 +69,8 @@ public class MainScreenActivity extends AppCompatActivity implements NavigationV
                             loadCourses(currentStudentId);
                             loadTransactions();
                         }
+                        loadBalance(); // Thêm reload số dư
+                        loadStudentInfo(); // Thêm reload thông tin sinh viên nếu cần
                     }
                 }
             }
@@ -123,9 +125,8 @@ public class MainScreenActivity extends AppCompatActivity implements NavigationV
                 return;
             }
 
-            // Gửi OTP
             String currentStudentId = etStudentId.getText().toString();
-            boolean isSelfPayment = currentStudentId.equals(username); // Xác định isSelf dựa trên studentId
+            boolean isSelfPayment = currentStudentId.equals(username);
             RequestPayTuitionBody body = new RequestPayTuitionBody(username, currentStudentId, isSelfPayment);
             apiService.requestPayTuition(body).enqueue(new Callback<AuthResponse>() {
                 @Override
@@ -138,7 +139,7 @@ public class MainScreenActivity extends AppCompatActivity implements NavigationV
                             intent.putExtra("username", username);
                             intent.putExtra("studentId", currentStudentId);
                             intent.putExtra("isSelf", isSelfPayment);
-                            startActivity(intent);
+                            successLauncher.launch(intent); // Sử dụng launcher thay vì startActivity
                         } else {
                             Toast.makeText(MainScreenActivity.this, resp.getMessage(), Toast.LENGTH_SHORT).show();
                         }

@@ -68,7 +68,6 @@ public class OtpActivity extends AppCompatActivity {
     }
 
     private void verifyOtp(String otp) {
-        // Tạo request body
         VerifyOtpBody request = new VerifyOtpBody(username, otp, studentId, isSelf);
         Call<AuthResponse> call = apiService.verifyOtpAndPay(request);
 
@@ -80,11 +79,11 @@ public class OtpActivity extends AppCompatActivity {
                     if (authResponse.isSuccess()) {
                         resultTextView.setText(authResponse.getMessage());
                         Toast.makeText(OtpActivity.this, "Thanh toán thành công!", Toast.LENGTH_SHORT).show();
-                        // Mở SuccessActivity thay vì finish ngay
                         Intent successIntent = new Intent(OtpActivity.this, SuccessActivity.class);
                         successIntent.putExtra("username", username);
                         successIntent.putExtra("studentId", studentId);
                         startActivity(successIntent);
+                        setResult(RESULT_OK); // Gửi kết quả về MainScreenActivity
                         finish(); // Đóng OtpActivity
                     } else {
                         resultTextView.setText("Lỗi: " + authResponse.getMessage());

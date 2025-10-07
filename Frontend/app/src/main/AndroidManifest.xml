@@ -35,5 +35,8 @@
         <activity
             android:name=".NapTienActivity"
             android:exported="false" />
+        <activity
+            android:name=".SuccessActivity"
+            android:label="Success"/>
     </application>
 </manifest>

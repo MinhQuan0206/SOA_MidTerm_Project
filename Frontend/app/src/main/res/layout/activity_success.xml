@@ -19,7 +19,7 @@
             android:id="@+id/iv_success_icon"
             android:layout_width="100dp"
             android:layout_height="100dp"
-            android:src="@drawable/ic_success"/>  <!-- Thêm drawable tick xanh lá ở đây -->
+            android:src="@drawable/ic_success"/>
         <TextView
             android:id="@+id/tv_success_message"
             android:layout_width="wrap_content"

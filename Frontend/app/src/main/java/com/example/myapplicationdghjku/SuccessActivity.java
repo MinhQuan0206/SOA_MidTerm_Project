@@ -18,11 +18,8 @@ public class SuccessActivity extends AppCompatActivity {
         btnBackHome.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(SuccessActivity.this, MainScreenActivity.class);
-                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-                startActivity(intent);
-                setResult(RESULT_OK); // Gửi tín hiệu thành công về MainScreenActivity
-                finish(); // Đóng SuccessActivity
+                setResult(RESULT_OK); // Gửi kết quả về
+                finish(); // Quay về activity trước đó (OtpActivity hoặc MainScreenActivity)
             }
         });
     }
