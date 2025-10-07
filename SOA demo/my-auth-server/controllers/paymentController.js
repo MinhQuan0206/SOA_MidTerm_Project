@@ -5,6 +5,7 @@ const Account = require('../models/Account');
 const Student = require('../models/Student');
 const Transaction = require('../models/Transaction');
 const Otp = require('../models/Otp');
+const User = require('../models/User'); // Import User model
 
 // Cấu hình nodemailer
 const transporter = nodemailer.createTransport({
@@ -35,7 +36,7 @@ exports.requestPayTuition = async (req, res) => {
     const targetStudentId = isSelf ? (await Student.findOne({ username }))?.studentId : studentId;
     if (!targetStudentId) return res.json({ success: false, message: 'Không tìm thấy sinh viên' });
 
-    // Tìm student và lấy tuitionFee (không cần transaction vì chỉ đọc)
+    // Tìm student và lấy tuitionFee
     const student = await Student.findOne({ studentId: targetStudentId });
     if (!student) return res.json({ success: false, message: 'Không tìm thấy sinh viên' });
     if (student.tuitionFee === 0) return res.json({ success: false, message: 'Sinh viên này đã thanh toán học phí rồi' });
@@ -48,10 +49,17 @@ exports.requestPayTuition = async (req, res) => {
     const otpDoc = new Otp({ username, otp });
     await otpDoc.save();
 
-    // Gửi OTP đến email
+    // Lấy email từ User
+    const user = await User.findOne({ username });
+    if (!user || !user.email) {
+      return res.json({ success: false, message: 'Không tìm thấy email của tài khoản' });
+    }
+    const userEmail = user.email;
+
+    // Gửi OTP đến email của tài khoản
     const mailOptions = {
       from: process.env.EMAIL_FROM,
-      to: 'kiettran112520@gmail.com', // Thay bằng email thật hoặc lấy từ User model
+      to: userEmail,
       subject: 'Mã OTP Thanh Toán Học Phí',
       text: `Mã OTP của bạn là ${otp}. Mã này có hiệu lực trong 5 phút.`
     };
@@ -69,8 +77,8 @@ exports.verifyOtpAndPay = async (req, res) => {
   if (!username || !otp || (isSelf === false && !studentId)) 
     return res.json({ success: false, message: 'Thiếu thông tin' });
 
-  const session = await mongoose.startSession(); // Bắt đầu transaction session
-  session.startTransaction(); // Bắt đầu transaction
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
   try {
     // Kiểm tra OTP trong transaction
@@ -108,17 +116,18 @@ exports.verifyOtpAndPay = async (req, res) => {
     // Xóa OTP sau khi thành công
     await Otp.deleteOne({ _id: otpDoc._id }).session(session);
 
-    await session.commitTransaction(); // Hoàn tất transaction nếu thành công
-    session.endSession(); // Kết thúc session
+    await session.commitTransaction();
+    session.endSession();
 
     return res.json({ success: true, message: 'Thanh toán thành công' });
   } catch (err) {
-    await session.abortTransaction(); // Hủy transaction nếu lỗi
-    session.endSession(); // Kết thúc session
+    await session.abortTransaction();
+    session.endSession();
     console.error(err);
     return res.json({ success: false, message: err.message });
   }
 };
+
 exports.getBalance = async (req, res) => {
   const { username } = req.query;
   if (!username) 

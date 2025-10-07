@@ -95,6 +95,16 @@ public class MainScreenActivity extends AppCompatActivity implements NavigationV
         tvTotalFee = findViewById(R.id.tv_total_fee);
         btnPay = findViewById(R.id.btn_pay);
         btnSearch = findViewById(R.id.btn_search);
+        Button btnLogout = findViewById(R.id.btn_logout); // Thêm ánh xạ
+
+        // Sự kiện đăng xuất
+        btnLogout.setOnClickListener(v -> {
+            SharedPreferences prefs = getSharedPreferences("app_prefs", MODE_PRIVATE);
+            prefs.edit().clear().apply();
+            Toast.makeText(MainScreenActivity.this, "Đã đăng xuất", Toast.LENGTH_SHORT).show();
+            startActivity(new Intent(MainScreenActivity.this, MainActivity.class));
+            finish();
+        });
 
         // Setup toolbar + drawer
         setSupportActionBar(toolbar);
@@ -139,7 +149,7 @@ public class MainScreenActivity extends AppCompatActivity implements NavigationV
                             intent.putExtra("username", username);
                             intent.putExtra("studentId", currentStudentId);
                             intent.putExtra("isSelf", isSelfPayment);
-                            successLauncher.launch(intent); // Sử dụng launcher thay vì startActivity
+                            successLauncher.launch(intent);
                         } else {
                             Toast.makeText(MainScreenActivity.this, resp.getMessage(), Toast.LENGTH_SHORT).show();
                         }
@@ -315,20 +325,43 @@ public class MainScreenActivity extends AppCompatActivity implements NavigationV
         apiService.searchStudent(studentId).enqueue(new Callback<Student>() {
             @Override
             public void onResponse(Call<Student> call, Response<Student> response) {
-                if (response.isSuccessful() && response.body() != null) {
+                if (response.isSuccessful()) {
                     Student student = response.body();
-                    etStudentId.setText(student.getStudentId());
-                    etStudentName.setText(student.getName());
-                    isSelf = student.getStudentId().equals(username); // Cập nhật isSelf dựa trên studentId
-                    loadCourses(student.getStudentId());
+                    if (student != null) {
+                        etStudentId.setText(student.getStudentId());
+                        etStudentName.setText(student.getName());
+                        isSelf = (student.getStudentId() != null && student.getStudentId().equals(username));
+                        loadCourses(student.getStudentId());
+                    } else {
+                        // Xử lý trường hợp API trả về success: false hoặc body null
+                        try {
+                            if (response.errorBody() != null) {
+                                String errorMessage = response.errorBody().string();
+                                Toast.makeText(MainScreenActivity.this, "Lỗi: " + errorMessage, Toast.LENGTH_SHORT).show();
+                            } else {
+                                Toast.makeText(MainScreenActivity.this, "Không tìm thấy sinh viên", Toast.LENGTH_SHORT).show();
+                            }
+                        } catch (Exception e) {
+                            Toast.makeText(MainScreenActivity.this, "Lỗi khi đọc phản hồi: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                        etStudentId.setText("");
+                        etStudentName.setText("");
+                        isSelf = false;
+                    }
                 } else {
-                    Toast.makeText(MainScreenActivity.this, "Không tìm thấy sinh viên", Toast.LENGTH_SHORT).show();
+                    etStudentId.setText("");
+                    etStudentName.setText("");
+                    isSelf = false;
+                    Toast.makeText(MainScreenActivity.this, "Lỗi server: " + response.message(), Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
             public void onFailure(Call<Student> call, Throwable t) {
-                Toast.makeText(MainScreenActivity.this, "Lỗi khi tìm sinh viên", Toast.LENGTH_SHORT).show();
+                etStudentId.setText("");
+                etStudentName.setText("");
+                isSelf = false;
+                Toast.makeText(MainScreenActivity.this, "Lỗi khi tìm sinh viên: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -363,34 +396,27 @@ public class MainScreenActivity extends AppCompatActivity implements NavigationV
         TableRow.LayoutParams lp2 = new TableRow.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
         TableRow.LayoutParams lp3 = new TableRow.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
         TableRow.LayoutParams lp4 = new TableRow.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
-        TableRow.LayoutParams lp5 = new TableRow.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
-
-        TextView tvSender = new TextView(this);
-        tvSender.setText(t.getSender() != null ? t.getSender() : "-");
-        tvSender.setGravity(Gravity.CENTER);
-        tvSender.setLayoutParams(lp1);
 
         TextView tvReceiver = new TextView(this);
         tvReceiver.setText(t.getReceiverStudentId() != null ? t.getReceiverStudentId() : "-");
         tvReceiver.setGravity(Gravity.CENTER);
-        tvReceiver.setLayoutParams(lp2);
+        tvReceiver.setLayoutParams(lp1);
 
         TextView tvAmount = new TextView(this);
         tvAmount.setText(moneyFormat.format(t.getAmount()) + " VNĐ");
         tvAmount.setGravity(Gravity.CENTER);
-        tvAmount.setLayoutParams(lp3);
+        tvAmount.setLayoutParams(lp2);
 
         TextView tvDatetime = new TextView(this);
         tvDatetime.setText(t.getDatetime() != null ? t.getDatetime() : "-");
         tvDatetime.setGravity(Gravity.CENTER);
-        tvDatetime.setLayoutParams(lp4);
+        tvDatetime.setLayoutParams(lp3);
 
         TextView tvStatus = new TextView(this);
         tvStatus.setText(t.getStatus() != null ? t.getStatus() : "-");
         tvStatus.setGravity(Gravity.CENTER);
-        tvStatus.setLayoutParams(lp5);
+        tvStatus.setLayoutParams(lp4);
 
-        row.addView(tvSender);
         row.addView(tvReceiver);
         row.addView(tvAmount);
         row.addView(tvDatetime);
