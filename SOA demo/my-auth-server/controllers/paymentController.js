@@ -117,6 +117,19 @@ exports.verifyOtpAndPay = async (req, res) => {
     await Otp.deleteOne({ _id: otpDoc._id }).session(session);
 
     await session.commitTransaction();
+
+    // Gửi email xác nhận thanh toán thành công
+    const user = await User.findOne({ username }).session(session); // Lấy lại user để lấy email
+    if (user && user.email) {
+      const mailOptions = {
+        from: process.env.EMAIL_FROM,
+        to: user.email,
+        subject: 'Xác Nhận Thanh Toán Học Phí Thành Công',
+        text: `Chào ${username},\n\nThanh toán học phí cho sinh viên ${targetStudentId} đã thành công!\n- Số tiền: ${amount} VNĐ\n- Thời gian: ${new Date().toLocaleString('vi-VN')}\n\nCảm ơn bạn đã sử dụng dịch vụ!`
+      };
+      await transporter.sendMail(mailOptions);
+    }
+
     session.endSession();
 
     return res.json({ success: true, message: 'Thanh toán thành công' });
