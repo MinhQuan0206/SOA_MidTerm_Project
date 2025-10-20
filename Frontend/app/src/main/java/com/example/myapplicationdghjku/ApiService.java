@@ -43,7 +43,8 @@ public interface ApiService {
     @POST("payment/verifyOtpAndPay")
     Call<AuthResponse> verifyOtpAndPay(@Body VerifyOtpBody body);
 
-
+    @POST("logout") // Thêm endpoint logout
+    Call<AuthResponse> logout(@Body LogoutBody body);
 
 
 

@@ -10,7 +10,8 @@ const userSchema = new mongoose.Schema({
     lowercase: true, 
     match: [/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/, 'Vui lòng nhập email hợp lệ'] 
   },
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now },
+  activeSessions: { type: [String], default: [] } // Đảm bảo mặc định là mảng rỗng
 });
 
 module.exports = mongoose.model('User', userSchema);

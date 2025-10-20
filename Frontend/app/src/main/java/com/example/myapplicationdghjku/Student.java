@@ -20,14 +20,18 @@ public class Student {
     @SerializedName("courses")
     private List<Course> courses;
 
+    @SerializedName("email") // Thêm trường email
+    private String email;
+
     public Student() {}
 
-    public Student(String username, String studentId, String name, double balance, List<Course> courses) {
+    public Student(String username, String studentId, String name, double balance, List<Course> courses, String email) {
         this.username = username;
         this.studentId = studentId;
         this.name = name;
         this.balance = balance;
         this.courses = courses;
+        this.email = email;
     }
 
     public String getUsername() { return username; }
@@ -35,12 +39,14 @@ public class Student {
     public String getName() { return name; }
     public double getBalance() { return balance; }
     public List<Course> getCourses() { return courses; }
+    public String getEmail() { return email; } // Thêm getter cho email
 
     public void setUsername(String username) { this.username = username; }
     public void setStudentId(String studentId) { this.studentId = studentId; }
     public void setName(String name) { this.name = name; }
     public void setBalance(double balance) { this.balance = balance; }
     public void setCourses(List<Course> courses) { this.courses = courses; }
+    public void setEmail(String email) { this.email = email; } // Thêm setter cho email
 
     @Override
     public String toString() {
@@ -50,6 +56,7 @@ public class Student {
                 ", name='" + name + '\'' +
                 ", balance=" + balance +
                 ", courses=" + courses +
+                ", email='" + email + '\'' + // Thêm email vào toString
                 '}';
     }
 }

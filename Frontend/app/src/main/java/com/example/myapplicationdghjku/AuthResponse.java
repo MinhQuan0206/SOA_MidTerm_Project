@@ -7,7 +7,10 @@ public class AuthResponse {
     private boolean success;
     @SerializedName("message")
     private String message;
+    @SerializedName("sessionId")
+    private String sessionId;
 
     public boolean isSuccess() { return success; }
     public String getMessage() { return message; }
+    public String getSessionId() { return sessionId; }
 }

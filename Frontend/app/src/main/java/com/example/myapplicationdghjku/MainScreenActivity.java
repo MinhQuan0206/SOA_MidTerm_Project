@@ -45,12 +45,13 @@ public class MainScreenActivity extends AppCompatActivity implements NavigationV
     private MaterialToolbar toolbar;
 
     private TextView tvAccountBalance;
-    private TextInputEditText etStudentId, etStudentName, etSearchStudent;
+    private TextInputEditText etStudentId, etStudentName, etSearchStudent, etStudentEmail;
     private TableLayout tlCourses, tlTransactions;
     private TextView tvTotalFee;
     private Button btnPay, btnSearch;
 
     private ApiService apiService;
+    private String sessionId; // Loại bỏ UUID, dùng từ Intent
     private String username;
     private double totalFee = 0.0;
     private boolean isSelf = true;
@@ -89,19 +90,39 @@ public class MainScreenActivity extends AppCompatActivity implements NavigationV
         tvAccountBalance = findViewById(R.id.tv_account_balance);
         etStudentId = findViewById(R.id.et_student_id);
         etStudentName = findViewById(R.id.et_student_name);
+        etStudentEmail = findViewById(R.id.et_student_email);
         etSearchStudent = findViewById(R.id.et_search_student);
         tlCourses = findViewById(R.id.tl_courses);
         tlTransactions = findViewById(R.id.tableTransactions);
         tvTotalFee = findViewById(R.id.tv_total_fee);
         btnPay = findViewById(R.id.btn_pay);
         btnSearch = findViewById(R.id.btn_search);
-        Button btnLogout = findViewById(R.id.btn_logout); // Thêm ánh xạ
+        Button btnLogout = findViewById(R.id.btn_logout);
 
         // Sự kiện đăng xuất
         btnLogout.setOnClickListener(v -> {
             SharedPreferences prefs = getSharedPreferences("app_prefs", MODE_PRIVATE);
+            String username = prefs.getString("username", null);
+            String sessionId = prefs.getString("sessionId", null);
+            if (username != null && sessionId != null) {
+                LogoutBody body = new LogoutBody(username, sessionId);
+                apiService.logout(body).enqueue(new Callback<AuthResponse>() {
+                    @Override
+                    public void onResponse(Call<AuthResponse> call, Response<AuthResponse> response) {
+                        if (response.isSuccessful() && response.body() != null && response.body().isSuccess()) {
+                            Toast.makeText(MainScreenActivity.this, "Đăng xuất thành công", Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(MainScreenActivity.this, "Lỗi đăng xuất", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<AuthResponse> call, Throwable t) {
+                        Toast.makeText(MainScreenActivity.this, "Lỗi kết nối khi đăng xuất", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
             prefs.edit().clear().apply();
-            Toast.makeText(MainScreenActivity.this, "Đã đăng xuất", Toast.LENGTH_SHORT).show();
             startActivity(new Intent(MainScreenActivity.this, MainActivity.class));
             finish();
         });
@@ -115,10 +136,16 @@ public class MainScreenActivity extends AppCompatActivity implements NavigationV
         toggle.syncState();
         navView.setNavigationItemSelectedListener(this);
 
-        // Lấy username từ SharedPreferences
-        SharedPreferences prefs = getSharedPreferences("app_prefs", MODE_PRIVATE);
-        username = prefs.getString("username", null);
-        if (username == null) {
+        // Lấy username và sessionId từ Intent
+        Intent intent = getIntent();
+        username = intent.getStringExtra("username");
+        sessionId = intent.getStringExtra("sessionId");
+        if (username == null || sessionId == null) {
+            SharedPreferences prefs = getSharedPreferences("app_prefs", MODE_PRIVATE);
+            username = prefs.getString("username", null);
+            sessionId = prefs.getString("sessionId", null);
+        }
+        if (username == null || sessionId == null) {
             Toast.makeText(this, "Vui lòng đăng nhập lại!", Toast.LENGTH_SHORT).show();
             startActivity(new Intent(this, MainActivity.class));
             finish();
@@ -138,6 +165,7 @@ public class MainScreenActivity extends AppCompatActivity implements NavigationV
             String currentStudentId = etStudentId.getText().toString();
             boolean isSelfPayment = currentStudentId.equals(username);
             RequestPayTuitionBody body = new RequestPayTuitionBody(username, currentStudentId, isSelfPayment);
+            body.setSessionId(sessionId); // Sử dụng sessionId từ Intent
             apiService.requestPayTuition(body).enqueue(new Callback<AuthResponse>() {
                 @Override
                 public void onResponse(Call<AuthResponse> call, Response<AuthResponse> response) {
@@ -149,6 +177,7 @@ public class MainScreenActivity extends AppCompatActivity implements NavigationV
                             intent.putExtra("username", username);
                             intent.putExtra("studentId", currentStudentId);
                             intent.putExtra("isSelf", isSelfPayment);
+                            intent.putExtra("sessionId", sessionId);
                             successLauncher.launch(intent);
                         } else {
                             Toast.makeText(MainScreenActivity.this, resp.getMessage(), Toast.LENGTH_SHORT).show();
@@ -306,7 +335,8 @@ public class MainScreenActivity extends AppCompatActivity implements NavigationV
                     Student student = response.body();
                     etStudentId.setText(student.getStudentId());
                     etStudentName.setText(student.getName());
-                    isSelf = true; // Đặt isSelf = true khi load thông tin bản thân
+                    etStudentEmail.setText(student.getEmail());
+                    isSelf = true;
                     loadCourses(student.getStudentId());
                 }
             }
@@ -330,10 +360,10 @@ public class MainScreenActivity extends AppCompatActivity implements NavigationV
                     if (student != null) {
                         etStudentId.setText(student.getStudentId());
                         etStudentName.setText(student.getName());
+                        etStudentEmail.setText(student.getEmail());
                         isSelf = (student.getStudentId() != null && student.getStudentId().equals(username));
                         loadCourses(student.getStudentId());
                     } else {
-                        // Xử lý trường hợp API trả về success: false hoặc body null
                         try {
                             if (response.errorBody() != null) {
                                 String errorMessage = response.errorBody().string();
@@ -346,11 +376,13 @@ public class MainScreenActivity extends AppCompatActivity implements NavigationV
                         }
                         etStudentId.setText("");
                         etStudentName.setText("");
+                        etStudentEmail.setText("");
                         isSelf = false;
                     }
                 } else {
                     etStudentId.setText("");
                     etStudentName.setText("");
+                    etStudentEmail.setText("");
                     isSelf = false;
                     Toast.makeText(MainScreenActivity.this, "Lỗi server: " + response.message(), Toast.LENGTH_SHORT).show();
                 }
@@ -360,6 +392,7 @@ public class MainScreenActivity extends AppCompatActivity implements NavigationV
             public void onFailure(Call<Student> call, Throwable t) {
                 etStudentId.setText("");
                 etStudentName.setText("");
+                etStudentEmail.setText("");
                 isSelf = false;
                 Toast.makeText(MainScreenActivity.this, "Lỗi khi tìm sinh viên: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }

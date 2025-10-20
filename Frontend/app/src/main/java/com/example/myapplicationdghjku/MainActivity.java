@@ -1,4 +1,5 @@
 package com.example.myapplicationdghjku;
+
 import android.content.SharedPreferences;
 import android.content.Intent;
 import android.os.Bundle;
@@ -38,7 +39,6 @@ public class MainActivity extends AppCompatActivity {
         etPassword = findViewById(R.id.et_password);
         btnLogin = findViewById(R.id.btn_login);
 
-
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
@@ -61,15 +61,24 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onResponse(Call<AuthResponse> call, Response<AuthResponse> response) {
                     if (response.isSuccessful() && response.body() != null) {
-                        if (response.body().isSuccess()) {
+                        AuthResponse authResponse = response.body();
+                        if (authResponse.isSuccess()) {
                             Toast.makeText(MainActivity.this, "Đăng nhập thành công", Toast.LENGTH_SHORT).show();
                             SharedPreferences prefs = getSharedPreferences("app_prefs", MODE_PRIVATE);
-                            prefs.edit().putString("username", username).apply(); // Lưu username
-                            Intent intent = new Intent(MainActivity.this, MainScreenActivity.class);
-                            startActivity(intent);
-                            finish();
+                            String sessionId = authResponse.getSessionId();
+                            if (sessionId != null) {
+                                prefs.edit().putString("username", username).apply();
+                                prefs.edit().putString("sessionId", sessionId).apply();
+                                Intent intent = new Intent(MainActivity.this, MainScreenActivity.class);
+                                intent.putExtra("username", username);
+                                intent.putExtra("sessionId", sessionId);
+                                startActivity(intent);
+                                finish();
+                            } else {
+                                Toast.makeText(MainActivity.this, "Lỗi: Không nhận được sessionId", Toast.LENGTH_SHORT).show();
+                            }
                         } else {
-                            Toast.makeText(MainActivity.this, "Đăng nhập thất bại: " + response.body().getMessage(), Toast.LENGTH_SHORT).show();
+                            Toast.makeText(MainActivity.this, "Đăng nhập thất bại: " + authResponse.getMessage(), Toast.LENGTH_SHORT).show();
                         }
                     } else {
                         Toast.makeText(MainActivity.this, "Đăng nhập thất bại (response error)", Toast.LENGTH_SHORT).show();
@@ -82,10 +91,5 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
         });
-
-
-
-
-
     }
 }

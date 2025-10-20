@@ -24,6 +24,7 @@ public class OtpActivity extends AppCompatActivity {
     private String username; // Người thanh toán
     private String studentId; // Người nhận thanh toán
     private boolean isSelf; // Trạng thái thanh toán cho bản thân hay người khác
+    private String sessionId; // Thêm session ID
     private String baseUrl = "http://10.0.2.2:3000/"; // Thay bằng IP nếu test trên thiết bị thực
 
     @Override
@@ -42,6 +43,7 @@ public class OtpActivity extends AppCompatActivity {
         username = intent.getStringExtra("username");
         studentId = intent.getStringExtra("studentId");
         isSelf = intent.getBooleanExtra("isSelf", true); // Mặc định true nếu không có
+        sessionId = intent.getStringExtra("sessionId"); // Lấy sessionId từ Intent
 
         if (username == null) {
             username = "testuser2"; // Giá trị mặc định nếu không nhận được
@@ -49,6 +51,10 @@ public class OtpActivity extends AppCompatActivity {
         }
         if (studentId == null) {
             studentId = username; // Mặc định thanh toán cho chính mình
+        }
+        if (sessionId == null) {
+            sessionId = java.util.UUID.randomUUID().toString(); // Tạo sessionId mặc định nếu không nhận được
+            Toast.makeText(this, "Lỗi: Không tìm thấy sessionId, tạo mới", Toast.LENGTH_SHORT).show();
         }
 
         // Xử lý sự kiện khi nhấn nút Xác Nhận
@@ -69,6 +75,7 @@ public class OtpActivity extends AppCompatActivity {
 
     private void verifyOtp(String otp) {
         VerifyOtpBody request = new VerifyOtpBody(username, otp, studentId, isSelf);
+        request.setSessionId(sessionId); // Thêm sessionId vào body
         Call<AuthResponse> call = apiService.verifyOtpAndPay(request);
 
         call.enqueue(new Callback<AuthResponse>() {

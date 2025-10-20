@@ -55,7 +55,13 @@ exports.requestPayTuition = async (req, res) => {
       return res.json({ success: false, message: 'Không tìm thấy email của tài khoản' });
     }
     const userEmail = user.email;
-
+    // Thêm session ID 
+    const sessionId = req.headers['session-id'] || crypto.randomBytes(16).toString('hex');
+    user.activeSessions = user.activeSessions || [];
+    if (!user.activeSessions.includes(sessionId)) {
+      user.activeSessions.push(sessionId);
+      await user.save();
+    }
     // Gửi OTP đến email của tài khoản
     const mailOptions = {
       from: process.env.EMAIL_FROM,
@@ -73,7 +79,7 @@ exports.requestPayTuition = async (req, res) => {
 };
 
 exports.verifyOtpAndPay = async (req, res) => {
-  const { username, otp, studentId, isSelf } = req.body;
+  const { username, otp, studentId, isSelf, sessionId } = req.body;
   if (!username || !otp || (isSelf === false && !studentId)) 
     return res.json({ success: false, message: 'Thiếu thông tin' });
 
@@ -81,15 +87,22 @@ exports.verifyOtpAndPay = async (req, res) => {
   session.startTransaction();
 
   try {
+    const user = await User.findOne({ username }).session(session);
+    if (!user || !user.activeSessions.includes(sessionId)) {
+      throw new Error('Phiên không hợp lệ');
+    }
     // Kiểm tra OTP trong transaction
     const otpDoc = await Otp.findOne({ username, otp }).session(session);
-    if (!otpDoc) throw new Error('OTP sai hoặc hết hạn');
+    if ((new Date() - otpDoc.createdAt > 1 * 60 * 1000)) {
+      throw new Error('OTP đã hết hạn');
+    }
+    if (!otpDoc) throw new Error('OTP sai. VUI LÒNG THỬ LẠI');
 
     // Xác định targetStudentId
     const targetStudentId = isSelf ? (await Student.findOne({ username }).session(session))?.studentId : studentId;
     if (!targetStudentId) throw new Error('Không tìm thấy sinh viên');
 
-    // Tìm student và lấy tuitionFee
+    // Kiểm tra lại student và tuitionFee
     const student = await Student.findOne({ studentId: targetStudentId }).session(session);
     if (!student) throw new Error('Không tìm thấy sinh viên');
     if (student.tuitionFee === 0) throw new Error('Sinh viên này đã thanh toán học phí rồi');
@@ -102,7 +115,7 @@ exports.verifyOtpAndPay = async (req, res) => {
     if (!account) throw new Error('Không tìm thấy tài khoản');
     if (account.balance < amount) throw new Error('Số dư không đủ');
 
-    // Thanh toán trong transaction
+    // Thực hiện thanh toán
     account.balance -= amount;
     await account.save({ session });
 
@@ -113,13 +126,13 @@ exports.verifyOtpAndPay = async (req, res) => {
     const transaction = new Transaction({ username, studentId: targetStudentId, amount, status: 'Thành công' });
     await transaction.save({ session });
 
-    // Xóa OTP sau khi thành công
+    // Xóa OTP
     await Otp.deleteOne({ _id: otpDoc._id }).session(session);
 
     await session.commitTransaction();
 
-    // Gửi email xác nhận thanh toán thành công
-    const user = await User.findOne({ username }).session(session); // Lấy lại user để lấy email
+    // Gửi email xác nhận
+    // const user = await User.findOne({ username }).session(session);
     if (user && user.email) {
       const mailOptions = {
         from: process.env.EMAIL_FROM,

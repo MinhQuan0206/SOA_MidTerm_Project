@@ -12,13 +12,14 @@ public class RequestPayTuitionBody {
 
     @SerializedName("isSelf")
     private boolean isSelf;
-
+    @SerializedName("sessionId")
+    private String sessionId;
     public RequestPayTuitionBody(String username, String studentId, boolean isSelf) {
         this.username = username;
         this.studentId = studentId;
         this.isSelf = isSelf;
     }
-
+    public void setSessionId(String sessionId) { this.sessionId = sessionId; }
     public String getUsername() { return username; }
     public String getStudentId() { return studentId; }
     public boolean isSelf() { return isSelf; }
